@@ -1,0 +1,1 @@
+{"type":"record","name":"Account","namespace":"com.example.kafka.dto","fields":[{"name":"accountNumber","type":{"type":"string","avro.java.string":"String"}},{"name":"userId","type":{"type":"string","avro.java.string":"String"}},{"name":"accountType","type":{"type":"string","avro.java.string":"String"}}]}
