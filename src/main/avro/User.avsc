@@ -1,0 +1,1 @@
+{"type":"record","name":"User","namespace":"com.example.kafka.dto","fields":[{"name":"id","type":{"type":"string","avro.java.string":"String"}},{"name":"name","type":{"type":"string","avro.java.string":"String"}},{"name":"surname","type":{"type":"string","avro.java.string":"String"}}]}

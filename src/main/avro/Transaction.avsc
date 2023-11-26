@@ -1,0 +1,1 @@
+{"type":"record","name":"Transaction","namespace":"com.example.kafka.dto","fields":[{"name":"from","type":{"type":"string","avro.java.string":"String"}},{"name":"to","type":{"type":"string","avro.java.string":"String"}},{"name":"amount","type":"double"}]}

@@ -1,0 +1,65 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.0.6'
+	id 'io.spring.dependency-management' version '1.1.0'
+	id 'net.croz.apicurio-registry-gradle-plugin' version '1.1.0'
+	id 'com.github.davidmc24.gradle.plugin.avro' version '1.7.0'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+	maven {
+		url "https://packages.confluent.io/maven"
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.apache.kafka:kafka-streams'
+	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'io.confluent:kafka-streams-avro-serde:7.3.3'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+avro {
+}
+
+schemaRegistry {
+	config {
+		url("http://localhost:8081")
+	}
+	download {
+		artifact {
+			id = "com.example.kafka.dto.Transaction"
+			outputPath = "src/main/avro"
+		}
+		artifact {
+			id = "com.example.kafka.dto.User"
+			outputPath = "src/main/avro"
+		}
+		artifact {
+			id = "com.example.kafka.dto.Account"
+			outputPath = "src/main/avro"
+		}
+		artifact {
+			id = "com.example.kafka.dto.TransactionEnriched"
+			outputPath = "src/main/avro"
+		}
+	}
+}

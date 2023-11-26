@@ -1,0 +1,7 @@
+spring:
+  kafka:
+    bootstrap-servers: "http://localhost:9094"
+    schema-registry: "http://localhost:8081/apis/ccompat/v6"
+
+server:
+  port: 8082
