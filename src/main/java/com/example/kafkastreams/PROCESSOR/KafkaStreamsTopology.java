@@ -5,6 +5,7 @@ import com.example.kafka.dto.Transaction;
 import com.example.kafka.dto.TransactionEnriched;
 import com.example.kafka.dto.User;
 import com.example.kafkastreams.PROCESSOR.processors.EnrichmentProcessor;
+import com.example.kafkastreams.PROCESSOR.processors.FilterProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
@@ -41,10 +42,10 @@ public class KafkaStreamsTopology {
 
     @Autowired
     void buildPipeline(StreamsBuilder builder) {
-        builder.globalTable("account",
-                Materialized.<String, Account, KeyValueStore<Bytes, byte[]>>as("account-state-store")
-                        .withKeySerde(Serdes.String())
-                        .withValueSerde(accountSerde));
+        builder.globalTable("account", /* <-- input topic name */
+                Materialized.<String, Account, KeyValueStore<Bytes, byte[]>>as("account-state-store")/* <-- state store name */
+                        .withKeySerde(Serdes.String()) /* <-- key serde */
+                        .withValueSerde(accountSerde));/* <-- value serde */
 
         builder.globalTable("user",
                 Materialized.<String, User, KeyValueStore<Bytes, byte[]>>as("user-state-store")
@@ -67,6 +68,21 @@ public class KafkaStreamsTopology {
                         "enrichedTopic",
                         Serdes.Long().serializer(),
                         transactionEnrichedSerde.serializer(),
-                        "EnrichmentProcessor");
+                        "EnrichmentProcessor")
+                .addSource(
+                        "EnrichmentSource",
+                        Serdes.Long().deserializer(),
+                        transactionEnrichedSerde.deserializer(),
+                        "enrichedTopic")
+                .addProcessor(
+                        "FilterProcessor",
+                        FilterProcessor::new,
+                        "EnrichmentSource")
+                .addSink(
+                        "FilterSink",
+                        "filteredTopic",
+                        Serdes.Long().serializer(),
+                        transactionSerde.serializer(),
+                        "FilterProcessor");
     }
 }
