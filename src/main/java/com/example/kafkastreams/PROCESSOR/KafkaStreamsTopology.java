@@ -46,11 +46,6 @@ public class KafkaStreamsTopology {
                         .withKeySerde(Serdes.String())
                         .withValueSerde(accountSerde));
 
-        builder.globalTable("user",
-                Materialized.<String, User, KeyValueStore<Bytes, byte[]>>as("user-state-store")
-                        .withKeySerde(Serdes.String())
-                        .withValueSerde(userSerde));
-
         Topology topology = builder.build();
 
         topology.addSource(
@@ -67,21 +62,6 @@ public class KafkaStreamsTopology {
                         "enrichedTopic",
                         Serdes.Long().serializer(),
                         transactionEnrichedSerde.serializer(),
-                        "EnrichmentProcessor")
-                .addSource(
-                        "EnrichmentSource",
-                        Serdes.Long().deserializer(),
-                        transactionEnrichedSerde.deserializer(),
-                        "enrichedTopic")
-                .addProcessor(
-                        "FilterProcessor",
-                        FilterProcessor::new,
-                        "EnrichmentProcessor")
-                .addSink(
-                        "FilterSink",
-                        "filteredTopic",
-                        Serdes.Long().serializer(),
-                        transactionSerde.serializer(),
-                        "FilterProcessor");
+                        "EnrichmentProcessor");
     }
 }
