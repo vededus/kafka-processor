@@ -42,10 +42,10 @@ public class KafkaStreamsTopology {
                 .stream("transaction", Consumed.with(Serdes.Long(), transactionSerde));
 
         GlobalKTable<String, Account> accountGlobalKTable = builder
-                .globalTable("account",
-                        Materialized.with(
-                                Serdes.String(),
-                                accountSerde));
+                .globalTable("account", Materialized.with(Serdes.String(), accountSerde));
+
+        GlobalKTable<String, User> userGlobalKTable = builder
+                .globalTable("user", Consumed.with(Serdes.String(), userSerde));
 
         transactionKStream
                 .peek((key, transaction) -> log.info("Consumed transaction {} ", transaction))
@@ -53,15 +53,24 @@ public class KafkaStreamsTopology {
                 .join(accountGlobalKTable,
                         (key, transactionEnriched) -> transactionEnriched.getFromAccount(),
                         (key, transactionEnriched, account) -> updateTransactionEnrichedFromFromAccount(transactionEnriched, account))
+                .join(userGlobalKTable,
+                        (key, transactionEnriched) -> transactionEnriched.getFromUserId(),
+                        (key, transactionEnriched, account) -> updateEnrichedTransactionWithFromUser(transactionEnriched, account))
+                .join(accountGlobalKTable,
+                        (key, transactionEnriched) -> transactionEnriched.getToAccount(),
+                        (key, transactionEnriched, account) -> updateTransactionEnrichedWithToAccount(transactionEnriched, account))
+                .join(userGlobalKTable,
+                        (key, transactionEnriched) -> transactionEnriched.getToUserId(),
+                        (key, transactionEnriched, account) -> updateEnrichedTransactionWithToUser(transactionEnriched, account))
                 .peek((key, transactionEnriched) -> log.info("Producing enriched transaction to enrichedTopic: " + transactionEnriched))
                 .to("enrichedTopic", Produced.with(Serdes.Long(), transactionEnrichedSerde));
-
-
 
         builder.stream("enrichedTopic", Consumed.with(Serdes.Long(), transactionEnrichedSerde))
                 .peek((key, transactionEnriched) -> log.info("Consumed enriched transaction '{}'.", key))
                 .filter((key, transactionEnriched) -> transactionEnriched.getAmount() > 500)
                 .peek((key, transactionEnriched) -> log.info("Transaction '{}' passed minimal amount.", key))
+                .filterNot((key, value) -> value.getFromUserId().equals(value.getToUserId()))
+                .peek((key, transactionEnriched) -> log.info("Transaction '{}' passed same user filter.", key))
                 .peek((key, transactionEnriched) -> log.info("Producing filtered transaction to filteredTopic"))
                 .to("filteredTopic", Produced.with(Serdes.Long(), transactionEnrichedSerde));
     }
@@ -71,26 +80,30 @@ public class KafkaStreamsTopology {
         transactionEnriched.setAmount(transaction.getAmount());
         transactionEnriched.setFromAccount(transaction.getFrom());
         transactionEnriched.setToAccount(transaction.getTo());
-
-        transactionEnriched.setFromAccountType("");
-        transactionEnriched.setFromUserId("");
-
-        transactionEnriched.setToAccountType("");
-        transactionEnriched.setToUserId("");
-
-        transactionEnriched.setFromUserName("");
-        transactionEnriched.setFromUserSurname("");
-
-        transactionEnriched.setToUserName("");
-        transactionEnriched.setToUserSurname("");
-
         return transactionEnriched;
     }
 
     private TransactionEnriched updateTransactionEnrichedFromFromAccount(TransactionEnriched transactionEnriched, Account account) {
         transactionEnriched.setFromAccountType(account.getAccountType());
         transactionEnriched.setFromUserId(account.getUserId());
+        return transactionEnriched;
+    }
 
+    private TransactionEnriched updateTransactionEnrichedWithToAccount(TransactionEnriched transactionEnriched, Account account) {
+        transactionEnriched.setToAccountType(account.getAccountType());
+        transactionEnriched.setToUserId(account.getUserId());
+        return transactionEnriched;
+    }
+
+    private TransactionEnriched updateEnrichedTransactionWithToUser(TransactionEnriched transactionEnriched, User user) {
+        transactionEnriched.setToUserName(user.getName());
+        transactionEnriched.setToUserSurname(user.getSurname());
+        return transactionEnriched;
+    }
+
+    private TransactionEnriched updateEnrichedTransactionWithFromUser(TransactionEnriched transactionEnriched, User user) {
+        transactionEnriched.setFromUserName(user.getName());
+        transactionEnriched.setFromUserSurname(user.getSurname());
         return transactionEnriched;
     }
 }
